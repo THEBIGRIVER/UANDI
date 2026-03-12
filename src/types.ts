@@ -46,6 +46,18 @@ export interface RelationshipTraits {
   fun: number;
 }
 
+export interface CharacterProfile {
+  name: string;
+  persona: string;
+  description: string;
+  traits: {
+    expressiveness: number;
+    positivity: number;
+    engagement: number;
+    patience: number;
+  };
+}
+
 export interface AnalysisResult {
   participants: ParticipantStats[];
   totalMessages: number;
@@ -67,4 +79,5 @@ export interface AnalysisResult {
   relationshipScore: number;
   traits: RelationshipTraits;
   advice: string[];
+  characterProfiles: CharacterProfile[];
 }

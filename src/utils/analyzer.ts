@@ -1,4 +1,4 @@
-import type { ChatMessage, AnalysisResult, ParticipantStats } from '../types';
+import type { ChatMessage, AnalysisResult, ParticipantStats, CharacterProfile } from '../types';
 
 // Simple positive/negative word lists for client-side sentiment (English + Bengali)
 const POSITIVE_WORDS = new Set(['love', 'good', 'great', 'awesome', 'amazing', 'happy', 'yay', 'yes', 'agree', 'beautiful', 'cute', 'sweet', 'thanks', 'thank', 'perfect', 'haha', 'lol', 'bhalo', 'bhalobasha', 'khub', 'darun', 'sundor', 'khushi', 'mishti', 'dhonnobad', 'shothik', 'valo']);
@@ -351,6 +351,76 @@ export function analyzeChat(messages: ChatMessage[]): AnalysisResult {
   // Normalize traits logically into 0-100 scores relative to total messages and general thresholds
   const normalizeScore = (count: number, threshold: number) => Math.min(100, Math.round((count / Math.max(1, messages.length / threshold)) * 100));
 
+  // Generate Character Profiles
+  const characterProfiles: CharacterProfile[] = participants.map(p => {
+    // Relative scores (normalized to other participant if possible)
+    const other = participants.find(op => op.name !== p.name) || p;
+    
+    // Expressiveness: Emojis, exclamation marks, laughs
+    const expScore = Math.min(100, Math.round(((p.laughCount + p.exclamationCount * 2) / Math.max(1, p.messageCount)) * 200));
+    
+    // Positivity: Based on affection words and laughs relative to swearing/conflict
+    const posScore = Math.min(100, Math.round(50 + ((p.affectionCount + p.laughCount - p.swearCount - p.conversationKills) / Math.max(1, p.messageCount)) * 100));
+    
+    // Engagement: How often they initiate, reply fast, and write long messages
+    const engScore = Math.min(100, Math.round(((p.conversationInitiations * 10 + p.wordCount / 5) / Math.max(1, p.messageCount)) * 50));
+    
+    // Patience: How long they wait vs double text
+    const responseTimeInvert = Math.max(0, 100 - p.avgResponseTimeMin);
+    const patScore = Math.min(100, Math.max(0, Math.round(responseTimeInvert - (p.doubleTextCount / Math.max(1, p.messageCount)) * 100)));
+    
+    let persona = "The Balanced Texter";
+    let description = "You have a balanced and grounded approach to communication.";
+    
+    const isNightOwl = p.nightMessageCount > p.messageCount * 0.15;
+    const isNovelist = p.avgWordPerMessage > 12;
+    const isExpressive = expScore > 60;
+    const isQuick = p.avgResponseTimeMin > 0 && p.avgResponseTimeMin < 5;
+    const isInitiator = other.conversationInitiations > 0 && p.conversationInitiations > other.conversationInitiations * 1.5;
+    const isLover = p.affectionCount > p.messageCount * 0.03;
+    
+    if (isLover) {
+      persona = "The Hopeless Romantic";
+      description = "You frequently use sweet and affectionate terms. You make sure your partner feels loved through words.";
+    } else if (isNightOwl) {
+      persona = "The Night Owl";
+      description = "You do your best communicating late at night. The quiet hours are when you're most active.";
+    } else if (isNovelist) {
+      persona = "The Novelist";
+      description = "You tend to write long, detailed messages instead of firing off quick, short texts. You value depth.";
+    } else if (isExpressive) {
+      persona = "The Expressive";
+      description = "You are highly reactive! You use lots of punctuation and laughs to convey your strong emotions.";
+    } else if (isInitiator) {
+      persona = "The Initiator";
+      description = "You are often the one reaching out first to start conversations. You actively maintain the connection.";
+    } else if (isQuick) {
+      persona = "The Speedster";
+      description = "You reply extremely fast! You are highly attentive when a conversation is happening.";
+    } else if (p.messageCount > other.messageCount * 1.5) {
+      persona = "The Chatterbox";
+      description = "You naturally send more messages and dominate the conversation flow—you have a lot to say!";
+    } else if (p.questionCount > p.messageCount * 0.1) {
+      persona = "The Inquisitor";
+      description = "You ask a lot of questions. You are curious and always want to know more about the other person.";
+    } else if (p.avgResponseTimeMin > 60) {
+      persona = "The Relaxed Texter";
+      description = "You don't rush to reply. You take your time responding and don't let the phone control you.";
+    }
+
+    return {
+      name: p.name,
+      persona,
+      description,
+      traits: {
+        expressiveness: Math.max(0, expScore),
+        positivity: Math.max(0, posScore),
+        engagement: Math.max(0, engScore),
+        patience: Math.max(0, patScore)
+      }
+    };
+  });
+
   return {
     participants,
     totalMessages: messages.length,
@@ -377,6 +447,7 @@ export function analyzeChat(messages: ChatMessage[]): AnalysisResult {
       conflict: normalizeScore(traitCounts.conflict, 20),
       fun: normalizeScore(traitCounts.fun, 15)
     },
-    advice
+    advice,
+    characterProfiles
   };
 }

@@ -5,7 +5,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   LineChart, Line
 } from 'recharts';
-import { MessageSquare, Heart, Clock, AlertTriangle, Zap, Smile, Timer, Moon, MessageCircle, Ruler, FileWarning, Skull, Flame, History, Scale } from 'lucide-react';
+import { MessageSquare, Heart, Clock, AlertTriangle, Zap, Smile, Timer, Moon, MessageCircle, Ruler, FileWarning, Skull, Flame, History, Scale, User, Star } from 'lucide-react';
 
 interface DashboardProps {
   data: AnalysisResult;
@@ -15,7 +15,7 @@ interface DashboardProps {
 const COLORS = ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6'];
 
 export function Dashboard({ data, onReset }: DashboardProps) {
-  const { participants, totalMessages, totalDays, messagesByDate, dominanceRatio, effortRatio, relationshipHistory, responseTimes, initiators, sentiment, commonWords, relationshipScore, traits, advice } = data;
+  const { participants, totalMessages, totalDays, messagesByDate, dominanceRatio, effortRatio, relationshipHistory, responseTimes, initiators, sentiment, commonWords, relationshipScore, traits, advice, characterProfiles } = data;
 
   const scoreColor = relationshipScore > 80 ? 'text-green-500' : relationshipScore > 50 ? 'text-amber-500' : 'text-red-500';
 
@@ -73,6 +73,55 @@ export function Dashboard({ data, onReset }: DashboardProps) {
           subtitle={`${initiators[0]?.count || 0} conversations started`}
           icon={<Zap className="text-yellow-500" />}
         />
+      </div>
+
+      {/* Character Analysis */}
+      <div className="mb-12">
+        <h3 className="text-2xl font-bold text-slate-800 mb-6 flex items-center justify-center">
+          <Star className="mr-3 text-yellow-500" />
+          Character Analysis
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {characterProfiles.map((cp, idx) => (
+            <div key={idx} className="bg-white p-6 rounded-2xl shadow border border-slate-100 flex flex-col md:flex-row items-center md:items-start gap-6 hover:shadow-md transition-shadow">
+              <div className="p-4 bg-indigo-50 rounded-full flex-shrink-0">
+                 <User className="w-12 h-12 text-indigo-500" />
+              </div>
+              <div className="flex-1 w-full text-center md:text-left">
+                 <h4 className="text-2xl font-bold text-slate-800 mb-1">{cp.name}</h4>
+                 <p className="text-lg font-semibold text-indigo-600 mb-3">{cp.persona}</p>
+                 <p className="text-slate-600 mb-4 h-16">{cp.description}</p>
+                 
+                 <div className="space-y-3 mt-4 border-t border-slate-100 pt-4 w-full">
+                    <div className="flex items-center text-sm">
+                      <span className="w-28 text-slate-500 text-left font-medium text-xs uppercase tracking-wider">Engagement</span>
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full mx-2">
+                         <div className="h-full bg-blue-400 rounded-full" style={{ width: `${cp.traits.engagement}%` }} />
+                      </div>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <span className="w-28 text-slate-500 text-left font-medium text-xs uppercase tracking-wider">Positivity</span>
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full mx-2">
+                         <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${cp.traits.positivity}%` }} />
+                      </div>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <span className="w-28 text-slate-500 text-left font-medium text-xs uppercase tracking-wider">Expressiveness</span>
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full mx-2">
+                         <div className="h-full bg-pink-400 rounded-full" style={{ width: `${cp.traits.expressiveness}%` }} />
+                      </div>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <span className="w-28 text-slate-500 text-left font-medium text-xs uppercase tracking-wider">Patience</span>
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full mx-2">
+                         <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${cp.traits.patience}%` }} />
+                      </div>
+                    </div>
+                 </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Main Charts area */}
